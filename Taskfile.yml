@@ -1,0 +1,58 @@
+version: '3'
+
+tasks:
+  proto:
+    desc: "Генерирует Go-код из всех proto-файлов"
+    summary: |
+      Полный пайплайн кодогенерации из .proto файлов:
+        1. Устанавливает buf (если не установлен)
+        2. Устанавливает локальные плагины protoc-gen-go и protoc-gen-go-grpc (если не установлены)
+        3. Запускает кодогенерацию
+    cmds:
+      - task: install-buf
+      - task: install-protoc-gen-go
+      - task: install-protoc-gen-go-grpc
+      - task: generate
+
+  install-buf:
+    desc: "Устанавливает buf (если не установлен)"
+    summary: |
+      Проверяет наличие buf в системе.
+      Если не найден — устанавливает через go install (работает на Mac/Linux/Windows).
+    cmds:
+      - echo "📦 Устанавливаем buf..."
+      - go install github.com/bufbuild/buf/cmd/buf@latest
+    status:
+      - buf --version
+
+  install-protoc-gen-go:
+    desc: "Устанавливает protoc-gen-go (если не установлен)"
+    summary: |
+      Устанавливает плагин protoc-gen-go для генерации *.pb.go файлов.
+    cmds:
+      - echo "📦 Устанавливаем protoc-gen-go..."
+      - go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    status:
+      - protoc-gen-go --version
+
+  install-protoc-gen-go-grpc:
+    desc: "Устанавливает protoc-gen-go-grpc (если не установлен)"
+    summary: |
+      Устанавливает плагин protoc-gen-go-grpc для генерации *_grpc.pb.go файлов.
+    cmds:
+      - echo "📦 Устанавливаем protoc-gen-go-grpc..."
+      - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+    status:
+      - protoc-gen-go-grpc --version
+
+  generate:
+    desc: "Запускает buf generate для всех proto-файлов"
+    summary: |
+      Генерирует Go-код из .proto файлов с помощью buf generate.
+      Использует локальные плагины из buf.gen.yaml:
+        - protoc-gen-go      → *.pb.go
+        - protoc-gen-go-grpc → *_grpc.pb.go
+    cmds:
+      - echo "⚙️  Запускаем кодогенерацию..."
+      - buf generate
+      - echo "✅ Кодогенерация завершена"

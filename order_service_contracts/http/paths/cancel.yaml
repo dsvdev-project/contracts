@@ -1,0 +1,20 @@
+post:
+  summary: Отменить заказ
+  operationId: cancelOrder
+  parameters:
+    - $ref: "../parameters/OrderUUID.yaml"
+  responses:
+    "204":
+      description: Заказ успешно отменён
+    "404":
+      description: Заказ не найден
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/ErrorResponse.yaml"
+    "409":
+      description: Заказ уже оплачен и не может быть отменён
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/ErrorResponse.yaml"

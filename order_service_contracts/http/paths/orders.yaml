@@ -1,0 +1,22 @@
+post:
+  summary: Создать заказ
+  operationId: createOrder
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../schemas/CreateOrderRequest.yaml"
+  responses:
+    "201":
+      description: Заказ успешно создан
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/CreateOrderResponse.yaml"
+    "400":
+      description: Некорректный запрос (например, часть деталей не найдена)
+      content:
+        application/json:
+          schema:
+            $ref: "../schemas/ErrorResponse.yaml"

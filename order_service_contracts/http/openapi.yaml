@@ -1,0 +1,19 @@
+openapi: "3.0.3"
+
+info:
+  title: OrderService API
+  description: Сервис заказов на постройку космических кораблей
+  version: "1.0.0"
+
+servers:
+  - url: /api/v1
+
+paths:
+  /orders:
+    $ref: "./paths/orders.yaml"
+  /orders/{order_uuid}:
+    $ref: "./paths/order.yaml"
+  /orders/{order_uuid}/pay:
+    $ref: "./paths/pay.yaml"
+  /orders/{order_uuid}/cancel:
+    $ref: "./paths/cancel.yaml"
