@@ -10,10 +10,246 @@ servers:
 
 paths:
   /orders:
-    $ref: "./paths/orders.yaml"
+    post:
+      summary: Создать заказ
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: Заказ успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOrderResponse"
+        "400":
+          description: Некорректный запрос (например, часть деталей не найдена)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders/{order_uuid}:
-    $ref: "./paths/order.yaml"
-  /orders/{order_uuid}/pay:
-    $ref: "./paths/pay.yaml"
+    get:
+      summary: Получить заказ по UUID
+      operationId: getOrder
+      parameters:
+        - name: order_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID заказа
+      responses:
+        "200":
+          description: Заказ найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Заказ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders/{order_uuid}/cancel:
-    $ref: "./paths/cancel.yaml"
+    post:
+      summary: Отменить заказ
+      operationId: cancelOrder
+      parameters:
+        - name: order_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID заказа
+      responses:
+        "204":
+          description: Заказ успешно отменён
+        "404":
+          description: Заказ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Заказ уже оплачен и не может быть отменён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{order_uuid}/pay:
+    post:
+      summary: Оплатить заказ
+      operationId: payOrder
+      parameters:
+        - name: order_uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID заказа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayOrderRequest"
+      responses:
+        "200":
+          description: Оплата проведена успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayOrderResponse"
+        "400":
+          description: Некорректный запрос или ошибка платёжного сервиса
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Заказ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      required:
+        - user_uuid
+        - part_uuids
+      properties:
+        user_uuid:
+          type: string
+          format: uuid
+          description: UUID пользователя
+        part_uuids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Список UUID деталей
+
+    CreateOrderResponse:
+      type: object
+      required:
+        - order_uuid
+        - total_price
+      properties:
+        order_uuid:
+          type: string
+          format: uuid
+          description: UUID созданного заказа
+        total_price:
+          type: number
+          format: double
+          description: Итоговая стоимость заказа
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Описание ошибки
+
+    Order:
+      type: object
+      required:
+        - order_uuid
+        - user_uuid
+        - part_uuids
+        - total_price
+        - status
+      properties:
+        order_uuid:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор заказа
+        user_uuid:
+          type: string
+          format: uuid
+          description: UUID пользователя
+        part_uuids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Список UUID деталей
+        total_price:
+          type: number
+          format: double
+          description: Итоговая стоимость заказа
+        transaction_uuid:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID транзакции (заполняется после оплаты)
+        payment_method:
+          nullable: true
+          description: Способ оплаты (заполняется после оплаты)
+          allOf:
+            - $ref: "#/components/schemas/PaymentMethod"
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+
+    PayOrderRequest:
+      type: object
+      required:
+        - payment_method
+      properties:
+        payment_method:
+          $ref: "#/components/schemas/PaymentMethod"
+
+    PayOrderResponse:
+      type: object
+      required:
+        - transaction_uuid
+      properties:
+        transaction_uuid:
+          type: string
+          format: uuid
+          description: UUID транзакции оплаты
+
+    PaymentMethod:
+      type: string
+      enum:
+        - UNKNOWN
+        - CARD
+        - SBP
+        - CREDIT_CARD
+        - INVESTOR_MONEY
+      description: |
+        Способ оплаты:
+        - `UNKNOWN` — неизвестный
+        - `CARD` — банковская карта
+        - `SBP` — система быстрых платежей
+        - `CREDIT_CARD` — кредитная карта
+        - `INVESTOR_MONEY` — деньги инвестора
+
+    OrderStatus:
+      type: string
+      enum:
+        - PENDING_PAYMENT
+        - PAID
+        - CANCELLED
+      description: |
+        Статус заказа:
+        - `PENDING_PAYMENT` — ожидает оплаты
+        - `PAID` — оплачен
+        - `CANCELLED` — отменён

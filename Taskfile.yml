@@ -74,15 +74,26 @@ tasks:
 
   generate-openapi:
     desc: "Запускает oapi-codegen для всех */http/openapi.yaml файлов"
+    summary: |
+      Генерирует два пакета для каждого сервиса:
+        - {service}http   — types + chi-server (именованные модели и серверный интерфейс)
+        - {service}client — client (HTTP-клиент для вызова сервиса из других сервисов)
     cmds:
       - echo "⚙️  Запускаем кодогенерацию OpenAPI..."
       - |
         export PATH="$PATH:$(go env GOPATH)/bin"
         for spec in $(find . -path "*_service_contracts/http/openapi.yaml" -not -path "./generated/*" | sort); do
           service=$(basename $(dirname $(dirname "$spec")) | sed 's/_service_contracts//')
-          out_dir="generated/$(basename $(dirname $(dirname "$spec")))/http"
-          mkdir -p "$out_dir"
-          oapi-codegen -package "${service}http" -generate types,chi-server,client -o "$out_dir/openapi.gen.go" "$spec"
-          echo "  ✓ $spec → $out_dir/openapi.gen.go (package ${service}http)"
+          base_dir="generated/$(basename $(dirname $(dirname "$spec")))"
+
+          http_dir="$base_dir/http"
+          mkdir -p "$http_dir"
+          oapi-codegen -package "${service}http" -generate types,chi-server -o "$http_dir/openapi.gen.go" "$spec"
+          echo "  ✓ $spec → $http_dir/openapi.gen.go (package ${service}http, types+chi-server)"
+
+          client_dir="$base_dir/client"
+          mkdir -p "$client_dir"
+          oapi-codegen -package "${service}client" -generate client -o "$client_dir/client.gen.go" "$spec"
+          echo "  ✓ $spec → $client_dir/client.gen.go (package ${service}client, client)"
         done
       - echo "✅ Кодогенерация OpenAPI завершена"
