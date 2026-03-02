@@ -47,12 +47,42 @@ tasks:
 
   generate:
     desc: "Запускает buf generate для всех proto-файлов"
-    summary: |
-      Генерирует Go-код из .proto файлов с помощью buf generate.
-      Использует локальные плагины из buf.gen.yaml:
-        - protoc-gen-go      → *.pb.go
-        - protoc-gen-go-grpc → *_grpc.pb.go
     cmds:
       - echo "⚙️  Запускаем кодогенерацию..."
-      - buf generate
+      - export PATH="$PATH:$(go env GOPATH)/bin" && buf generate
       - echo "✅ Кодогенерация завершена"
+
+  openapi:
+    desc: "Генерирует Go-код из OpenAPI-спецификаций"
+    summary: |
+      Полный пайплайн кодогенерации из OpenAPI .yaml файлов:
+        1. Устанавливает oapi-codegen (если не установлен)
+        2. Запускает кодогенерацию
+    cmds:
+      - task: install-oapi-codegen
+      - task: generate-openapi
+
+  install-oapi-codegen:
+    desc: "Устанавливает oapi-codegen (если не установлен)"
+    summary: |
+      Устанавливает плагин oapi-codegen для генерации Go-кода из OpenAPI спецификаций.
+    cmds:
+      - echo "📦 Устанавливаем oapi-codegen..."
+      - go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+    status:
+      - oapi-codegen --version
+
+  generate-openapi:
+    desc: "Запускает oapi-codegen для всех */http/openapi.yaml файлов"
+    cmds:
+      - echo "⚙️  Запускаем кодогенерацию OpenAPI..."
+      - |
+        export PATH="$PATH:$(go env GOPATH)/bin"
+        for spec in $(find . -path "*_service_contracts/http/openapi.yaml" -not -path "./generated/*" | sort); do
+          service=$(basename $(dirname $(dirname "$spec")) | sed 's/_service_contracts//')
+          out_dir="generated/$(basename $(dirname $(dirname "$spec")))/http"
+          mkdir -p "$out_dir"
+          oapi-codegen -package "${service}http" -generate types,server,client -o "$out_dir/openapi.gen.go" "$spec"
+          echo "  ✓ $spec → $out_dir/openapi.gen.go (package ${service}http)"
+        done
+      - echo "✅ Кодогенерация OpenAPI завершена"
