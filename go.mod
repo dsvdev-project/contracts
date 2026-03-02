@@ -1,4 +1,4 @@
-module github.com/LizaProject/shared
+module github.com/dsvdev-project/contracts
 
 go 1.25.0
 
