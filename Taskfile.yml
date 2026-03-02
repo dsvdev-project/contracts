@@ -82,7 +82,7 @@ tasks:
           service=$(basename $(dirname $(dirname "$spec")) | sed 's/_service_contracts//')
           out_dir="generated/$(basename $(dirname $(dirname "$spec")))/http"
           mkdir -p "$out_dir"
-          oapi-codegen -package "${service}http" -generate types,server,client -o "$out_dir/openapi.gen.go" "$spec"
+          oapi-codegen -package "${service}http" -generate types,chi-server,client -o "$out_dir/openapi.gen.go" "$spec"
           echo "  ✓ $spec → $out_dir/openapi.gen.go (package ${service}http)"
         done
       - echo "✅ Кодогенерация OpenAPI завершена"
